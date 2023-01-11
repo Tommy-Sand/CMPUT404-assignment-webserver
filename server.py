@@ -32,6 +32,11 @@ HTTP_400 = "HTTP/1.1 400 BAD REQUEST\n"
 HTTP_404 = "HTTP/1.1 404 NOT FOUND\n"
 HTTP_405 = "HTTP/1.1 405 METHOD NOT ALLOWED\n"
 
+directories = [
+b"/",
+b"/deep/"
+]
+
 class MyWebServer(socketserver.BaseRequestHandler):
 	
 	def handle(self):
@@ -45,25 +50,25 @@ class MyWebServer(socketserver.BaseRequestHandler):
 		if(start_line.startswith(b"GET")):
 			#Can proceed
 			path = start_line[3:len(start_line) - 9].strip()
-			print(path)
+			#print(path)
 			directory_path = b"./www"
-			print("Can proceed")
+			print(path[: len(path) - len(b"index.html")] in directories)
 			#absolute path
 			if(path.startswith(b"/")):
-				if(path == b"/" or path == b"/index.html"):
+				#print(path in directories)
+				if(path in directories):
 					#Serve ./www/index.html
-					file = open("./www/index.html", "r")
+					file = open(directory_path + path + b"/index.html", "r")
 					self.request.sendall(bytearray(HTTP_200 + file.read(), 'utf-8'))
+				elif(path.endswith(b"/index.html") and path[: len(path) - len(b"index.html")] in directories):
+					file = open(directory_path + path, "r")
+					self.request.sendall(bytearray(HTTP_200 + file.read(), "utf-8"))
 				elif(path == b"/base.css"):
 					#Serve ./www/base.css
 					directory_path += path 
 					file = open(directory_path, "r")
 					self.request.sendall(bytearray(HTTP_200 + file.read(), 'utf-8'))
-				elif(path == b"/deep/" or path == b"/deep/index.html"):
-					#Serve ./www/deep/index.html
-					directory_path += path
-					file = open("./www/deep/index.html", "r")
-					self.request.sendall(bytearray(HTTP_200 + file.read(), 'utf-8'))
+					return
 				elif(path == b"/deep/deep.css"):
 					#Serve ./www/deep/base.css
 					file = open("./www/deep/deep.css", "r")
