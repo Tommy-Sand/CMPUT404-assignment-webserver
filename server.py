@@ -44,12 +44,35 @@ class MyWebServer(socketserver.BaseRequestHandler):
 		start_line = self.data.split(b"\n", 1)[0].strip()
 		if(start_line.startswith(b"GET")):
 			#Can proceed
-			path = "./www"
+			path = start_line[3:len(start_line) - 9].strip()
+			print(path)
+			directory_path = b"./www"
 			print("Can proceed")
 			#absolute path
+			if(path.startswith(b"/")):
+				if(path == b"/" or path == b"/index.html"):
+					#Serve ./www/index.html
+					file = open("./www/index.html", "r")
+					self.request.sendall(bytearray(HTTP_200 + file.read(), 'utf-8'))
+				elif(path == b"/base.css"):
+					#Serve ./www/base.css
+					directory_path += path 
+					file = open(directory_path, "r")
+					self.request.sendall(bytearray(HTTP_200 + file.read(), 'utf-8'))
+				elif(path == b"/deep/" or path == b"/deep/index.html"):
+					#Serve ./www/deep/index.html
+					directory_path += path
+					file = open("./www/deep/index.html", "r")
+					self.request.sendall(bytearray(HTTP_200 + file.read(), 'utf-8'))
+				elif(path == b"/deep/deep.css"):
+					#Serve ./www/deep/base.css
+					file = open("./www/deep/deep.css", "r")
+					self.request.sendall(bytearray(HTTP_200 + file.read(), 'utf-8'))
+				else:
+					self.handle_404()
 			#complete URL
-			f1 = open("./www/index.html", "r")
-			self.request.sendall(bytearray(HTTP_200 + f1.read(), 'utf-8'))
+			elif(path.startswith(b"http://")):
+				pass
 		elif(start_line.startswith((b"HEAD", b"POST", b"PUT", b"DELETE", b"CONNECT", b"OPTIONS", b"TRACE", b"PATCH"))):
 			#Throw 405 error
 			self.handle_405()
@@ -63,6 +86,10 @@ class MyWebServer(socketserver.BaseRequestHandler):
 	def handle_400(self):
 		ERROR = "\nBad Request\n"
 		self.request.sendall(bytearray(HTTP_400 + ERROR, 'utf-8'))
+
+	def handle_404(self):
+		ERROR = "\nNo such page exists\n"
+		self.request.sendall(bytearray(HTTP_404 + ERROR, 'utf-8'))
 
 	def handle_405(self):
 		ERROR = "\nAllow: GET\n"
