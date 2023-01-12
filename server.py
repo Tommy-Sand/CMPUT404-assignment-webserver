@@ -80,9 +80,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
 					except OSError:
 						self.handle_404()
 					return
-			#complete URL
-			elif(path.startswith(b"http://")):
-				pass
+			#complete URL to do later
+			#elif(path.startswith(b"http://")):
+				
 		elif(start_line.startswith((b"HEAD", b"POST", b"PUT", b"DELETE", b"CONNECT", b"OPTIONS", b"TRACE", b"PATCH"))):
 			#Throw 405 error
 			self.handle_405()
@@ -90,8 +90,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
 			#Throw 400 error
 			self.handle_400()
 		#Make sure it's a proper url
-			#If the url is http://127.0.0.1:8080/
-		#self.request.sendall(bytearray(HTTP_200,'utf-8'))
 
 	def handle_400(self):
 		ERROR = "\nBad Request\n"
