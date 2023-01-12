@@ -1,5 +1,6 @@
 #  coding: utf-8 
 import socketserver
+import os
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
@@ -52,28 +53,33 @@ class MyWebServer(socketserver.BaseRequestHandler):
 			directory_path = b"./www"
 			#absolute path
 			if(path.startswith(b"/")):
+				os.path.abspath(directory_path + path)
+				if(not os.path.abspath(directory_path + path).startswith(os.path.abspath(directory_path))):				
+					self.handle_404()
+					return
 				#print(path in directories)
-				if(path in directories):
-					#Serve ./www/index.html
-					file = open(directory_path + path + b"/index.html", "r")
-					self.request.sendall(bytearray(HTTP_200 + HTTP_mime + "\n" + file.read(), 'utf-8'))
-				elif(path.endswith(b"/index.html") and path[: len(path) - len(b"index.html")] in directories):
-					file = open(directory_path + path, "r")
-					self.request.sendall(bytearray(HTTP_200 + HTTP_mime + "\n" + file.read(), "utf-8"))
-				elif(path.endswith(b".css")):
-					#Serve ./www/base.css
+				if(path.endswith(b"/")):
 					try:
-						file = open(directory_path + path, "r")
-						self.request.sendall(bytearray(HTTP_200 + CSS_mime + "\n" + file.read(), 'utf-8'))
+						file = open(directory_path + path + b"index.html", "r")
+						self.request.sendall(bytearray(HTTP_200 + HTTP_mime + "\n" + file.read(), 'utf-8'))
 					except:
 						self.handle_404()
 					return
-				elif(path + b"/" in directories):
-					#Serve ./www/deep/base.css
+				elif(os.path.isdir(directory_path + path)):
 					location = (b"Location: " + path + b"/\n").decode('utf-8')
 					self.request.sendall(bytearray(HTTP_301 + location, 'utf-8'))
 				else:
-					self.handle_404()
+					try:
+						file = open(directory_path + path, "r")
+						if(path.endswith(b".css")):
+							self.request.sendall(bytearray(HTTP_200 + CSS_mime + "\n" + file.read(), 'utf-8'))
+						elif(path.endswith(b".html")):
+							self.request.sendall(bytearray(HTTP_200 + HTTP_mime + "\n" + file.read(), 'utf-8'))
+						else:
+							self.request.sendall(bytearray(HTTP_200 + "\n" + file.read(), 'utf-8'))
+					except OSError:
+						self.handle_404()
+					return
 			#complete URL
 			elif(path.startswith(b"http://")):
 				pass
