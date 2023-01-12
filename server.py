@@ -26,16 +26,14 @@ import socketserver
 
 # try: curl -v -X GET http://127.0.0.1:8080/
 
-HTTP_200 = """HTTP/1.1 200 OK\n\n"""
+HTTP_200 = "HTTP/1.1 200 OK\n"
 HTTP_301 = "HTTP/1.1 301 MOVED PERMANENTLY\n"
 HTTP_400 = "HTTP/1.1 400 BAD REQUEST\n"
 HTTP_404 = "HTTP/1.1 404 NOT FOUND\n"
 HTTP_405 = "HTTP/1.1 405 METHOD NOT ALLOWED\n"
 
-directories = [
-b"/",
-b"/deep/"
-]
+HTTP_mime = "Content-Type: text/html; UTF-8\n"
+CSS_mime = "Content-Type: text/css; UTF-8\n"
 
 class MyWebServer(socketserver.BaseRequestHandler):
 	
@@ -52,27 +50,28 @@ class MyWebServer(socketserver.BaseRequestHandler):
 			path = start_line[3:len(start_line) - 9].strip()
 			#print(path)
 			directory_path = b"./www"
-			print(path[: len(path) - len(b"index.html")] in directories)
 			#absolute path
 			if(path.startswith(b"/")):
 				#print(path in directories)
 				if(path in directories):
 					#Serve ./www/index.html
 					file = open(directory_path + path + b"/index.html", "r")
-					self.request.sendall(bytearray(HTTP_200 + file.read(), 'utf-8'))
+					self.request.sendall(bytearray(HTTP_200 + HTTP_mime + "\n" + file.read(), 'utf-8'))
 				elif(path.endswith(b"/index.html") and path[: len(path) - len(b"index.html")] in directories):
 					file = open(directory_path + path, "r")
-					self.request.sendall(bytearray(HTTP_200 + file.read(), "utf-8"))
-				elif(path == b"/base.css"):
+					self.request.sendall(bytearray(HTTP_200 + HTTP_mime + "\n" + file.read(), "utf-8"))
+				elif(path.endswith(b".css")):
 					#Serve ./www/base.css
-					directory_path += path 
-					file = open(directory_path, "r")
-					self.request.sendall(bytearray(HTTP_200 + file.read(), 'utf-8'))
+					try:
+						file = open(directory_path + path, "r")
+						self.request.sendall(bytearray(HTTP_200 + CSS_mime + "\n" + file.read(), 'utf-8'))
+					except:
+						self.handle_404()
 					return
-				elif(path == b"/deep/deep.css"):
+				elif(path + b"/" in directories):
 					#Serve ./www/deep/base.css
-					file = open("./www/deep/deep.css", "r")
-					self.request.sendall(bytearray(HTTP_200 + file.read(), 'utf-8'))
+					location = (b"Location: " + path + b"/\n").decode('utf-8')
+					self.request.sendall(bytearray(HTTP_301 + location, 'utf-8'))
 				else:
 					self.handle_404()
 			#complete URL
