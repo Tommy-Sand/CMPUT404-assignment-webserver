@@ -40,24 +40,30 @@ class MyWebServer(socketserver.BaseRequestHandler):
 	
 	def handle(self):
 		self.data = self.request.recv(1024).strip()
-		print ("Got a request of: %s\n" % self.data)
-		if(len(self.data.split(b"\n")) == 0): 
-			#Throw 400 error
+
+		if(len(self.data.split(b"\n")) == 0): #no actual request
 			self.handle_400()
 			return
+
 		start_line = self.data.split(b"\n", 1)[0].strip()
 		if(start_line.startswith(b"GET")):
-			#Can proceed
-			path = start_line[3:len(start_line) - 9].strip()
-			#print(path)
+			path = start_line[3:len(start_line) - len(" HTTP/1.1")].strip()
 			directory_path = b"./www"
-			#absolute path
-			if(path.startswith(b"/")):
+
+			if(path.startswith(b"http://")):
+				path_noscheme = path[len("http://"):]
+				if(path_noscheme.find("/") > 0):
+					path= path[path_noscheme.find("/"):]
+				else:
+					self.handle_400()
+
+			elif(path.startswith(b"/")):
+				#Check if the path ends inside /www/ directory
 				os.path.abspath(directory_path + path)
 				if(not os.path.abspath(directory_path + path).startswith(os.path.abspath(directory_path))):				
 					self.handle_404()
 					return
-				#print(path in directories)
+				
 				if(path.endswith(b"/")):
 					try:
 						file = open(directory_path + path + b"index.html", "r")
@@ -80,9 +86,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
 					except OSError:
 						self.handle_404()
 					return
-			#complete URL to do later
-			#elif(path.startswith(b"http://")):
-				
+			else:
+				self.handle_400()	
 		elif(start_line.startswith((b"HEAD", b"POST", b"PUT", b"DELETE", b"CONNECT", b"OPTIONS", b"TRACE", b"PATCH"))):
 			#Throw 405 error
 			self.handle_405()
