@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #  coding: utf-8 
 import socketserver
 import os
@@ -35,6 +36,7 @@ HTTP_405 = "HTTP/1.1 405 METHOD NOT ALLOWED\n"
 
 HTTP_mime = "Content-Type: text/html; UTF-8\n"
 CSS_mime = "Content-Type: text/css; UTF-8\n"
+Content_length = "Content-Length: {}\n"
 
 class MyWebServer(socketserver.BaseRequestHandler):
 	
@@ -77,24 +79,22 @@ class MyWebServer(socketserver.BaseRequestHandler):
 				else:
 					try:
 						file = open(directory_path + path, "r")
+						file_size = os.path.getsize(directory_path + path)
+						response_header = HTTP_200 + Content_length.format(file_size)
 						if(path.endswith(b".css")):
-							self.request.sendall(bytearray(HTTP_200 + CSS_mime + "\n" + file.read(), 'utf-8'))
+							response_header += CSS_mime
 						elif(path.endswith(b".html")):
-							self.request.sendall(bytearray(HTTP_200 + HTTP_mime + "\n" + file.read(), 'utf-8'))
-						else:
-							self.request.sendall(bytearray(HTTP_200 + "\n" + file.read(), 'utf-8'))
+							response_header += HTTP_mime
+						self.request.sendall(bytearray(response_header + "\n" + file.read(), 'utf-8'))
 					except OSError:
 						self.handle_404()
 					return
 			else:
 				self.handle_400()	
 		elif(start_line.startswith((b"HEAD", b"POST", b"PUT", b"DELETE", b"CONNECT", b"OPTIONS", b"TRACE", b"PATCH"))):
-			#Throw 405 error
 			self.handle_405()
 		else:
-			#Throw 400 error
 			self.handle_400()
-		#Make sure it's a proper url
 
 	def handle_400(self):
 		ERROR = "\nBad Request\n"
